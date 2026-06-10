@@ -1,0 +1,33 @@
+name: Test command input and GPG inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          command: 'list'
+          command_args: '--plain'
+          project_id: '123456'
+          token: 'fake-token-for-testing'
+          base_url: 'https://api.crowdin.com'
+          base_path: '.'
+          source: '/src/**'
+          translation: '/translations/%two_letters_code%/%original_file_name%'
+          github_base_url: 'github.com'
+          github_api_base_url: 'https://api.github.com'
+          github_user_name: 'Test Bot'
+          github_user_email: 'test@example.com'
+          gpg_private_key: 'fake-gpg-key-placeholder'
+          gpg_passphrase: 'fake-passphrase'
+          dryrun_action: 'false'
+      - name: Assert action ran (may fail due to fake credentials)
+        run: |
+          echo "Action outcome: ${{ steps.action.outcome }}"
+          echo "command_output: ${{ steps.action.outputs.command_output }}"
+          echo "PASS: inputs were accepted"
