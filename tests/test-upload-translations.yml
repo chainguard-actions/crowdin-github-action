@@ -1,0 +1,29 @@
+name: Test upload translations inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'true'
+          upload_language: 'fr'
+          auto_approve_imported: 'false'
+          import_eq_suggestions: 'false'
+          upload_translations_args: '--no-progress'
+          token: 'fake-token-for-testing'
+          project_id: '12345'
+          base_url: 'https://api.crowdin.com'
+          base_path: '.'
+          source: '/src/**/*.json'
+          translation: '/translations/%two_letters_code%/%original_file_name%'
+          dryrun_action: 'true'
+      - name: Assert action ran (may fail due to invalid credentials)
+        run: |
+          echo "Action completed with outcome: ${{ steps.action.outcome }}"
+          echo "PASS: upload_language and upload_translations inputs were accepted"

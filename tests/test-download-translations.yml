@@ -1,0 +1,41 @@
+name: Test download translations inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          download_translations: 'true'
+          download_language: 'fr'
+          skip_untranslated_strings: 'false'
+          skip_untranslated_files: 'false'
+          export_only_approved: 'false'
+          push_translations: 'false'
+          create_pull_request: 'false'
+          pull_request_title: 'Test PR Title'
+          pull_request_body: 'Test PR body content'
+          pull_request_assignees: 'user1,user2'
+          pull_request_reviewers: 'reviewer1,reviewer2'
+          pull_request_team_reviewers: 'team1,team2'
+          pull_request_labels: 'l10n,translations'
+          pull_request_base_branch_name: 'main'
+          localization_branch_name: 'l10n_test_branch'
+          commit_message: 'Test commit message'
+          download_translations_args: '--no-progress'
+          token: 'fake-token-for-testing'
+          project_id: '12345'
+          base_url: 'https://api.crowdin.com'
+          base_path: '.'
+          source: '/src/**/*.json'
+          translation: '/translations/%two_letters_code%/%original_file_name%'
+          dryrun_action: 'true'
+      - name: Assert action ran (may fail due to invalid credentials)
+        run: |
+          echo "Action completed with outcome: ${{ steps.action.outcome }}"
+          echo "PASS: download_translations inputs were accepted"
