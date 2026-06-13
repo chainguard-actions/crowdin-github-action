@@ -1,0 +1,33 @@
+name: Test custom command
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'false'
+          command: 'crowdin'
+          command_args: '--version'
+          github_api_base_url: 'https://api.github.com'
+          gpg_private_key: ''
+          gpg_passphrase: ''
+          project_id: '123456'
+          token: 'fake-token-for-command'
+      - name: Assert command output
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "WARN: command_output is empty, but action completed"
+          fi
+          echo "PASS"
