@@ -1,0 +1,31 @@
+name: Test dryrun mode with no operations
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          dryrun_action: 'true'
+
+      - name: Assert action completed successfully with dryrun
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$PR_CREATED'"
+          if [ "$PR_CREATED" != "false" ] && [ -n "$PR_CREATED" ]; then
+            echo "FAIL: expected pull_request_created to be 'false' or empty in dryrun mode, got: $PR_CREATED"
+            exit 1
+          fi
+          echo "PASS: dryrun mode completed with expected default outputs"

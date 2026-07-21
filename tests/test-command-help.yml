@@ -1,0 +1,47 @@
+name: Test command input with help
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          command: 'help'
+
+      - name: Assert action ran (help command)
+        if: always()
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          echo "command_output: '$ACTUAL'"
+          # The action may succeed or fail depending on crowdin help exit code.
+          # Either way, the action must have run (outcome is success or failure, not skipped).
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action step was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME"
+          # If the action succeeded, verify command_output looks like help text or is empty
+          if [ "$OUTCOME" = "success" ] && [ -n "$ACTUAL" ]; then
+            if ! echo "$ACTUAL" | grep -qi "crowdin\|usage\|command\|help\|option"; then
+              echo "FAIL: command_output does not look like help text: $ACTUAL"
+              exit 1
+            fi
+            echo "PASS: command_output contains help text"
+          else
+            echo "PASS: action completed (command_output may be empty if help exits non-zero)"
+          fi

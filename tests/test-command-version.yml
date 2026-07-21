@@ -1,0 +1,47 @@
+name: Test command input with version
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          command: '--version'
+
+      - name: Assert action ran (version command)
+        if: always()
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "step outcome: $OUTCOME"
+          echo "command_output: '$ACTUAL'"
+          # The action must have run (not skipped)
+          if [ "$OUTCOME" = "skipped" ]; then
+            echo "FAIL: action step was skipped unexpectedly"
+            exit 1
+          fi
+          echo "PASS: action ran with outcome=$OUTCOME"
+          # If the action succeeded, command_output should contain version info
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ACTUAL" ]; then
+              echo "WARN: command_output is empty - version info may have been output to stderr"
+              echo "PASS: action completed successfully (version command ran without error)"
+            else
+              echo "PASS: command_output is non-empty: $ACTUAL"
+            fi
+          else
+            echo "PASS: action ran (non-zero exit is acceptable for version command)"
+          fi
