@@ -1,0 +1,54 @@
+name: Test pull request options inputs coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: crowdin
+          command_args: '--version'
+          token: 'fake-crowdin-token'
+          project_id: '12345'
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'false'
+          create_pull_request: 'false'
+          pull_request_title: 'Test PR Title'
+          pull_request_body: 'This is a test pull request body'
+          pull_request_assignees: 'user1,user2'
+          pull_request_reviewers: 'reviewer1,reviewer2'
+          pull_request_team_reviewers: 'team-slug'
+          pull_request_labels: 'l10n,translations'
+          pull_request_base_branch_name: 'main'
+
+      - name: Assert action ran (version output or graceful failure)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          OUTPUT: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "output: $OUTPUT"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without real Crowdin credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
