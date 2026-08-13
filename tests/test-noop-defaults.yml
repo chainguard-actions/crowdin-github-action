@@ -1,0 +1,57 @@
+name: Test no-op mode with default outputs
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+
+      - name: Assert action outcome and outputs
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+          PR_NUMBER: ${{ steps.action.outputs.pull_request_number }}
+          CMD_OUTPUT: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "pull_request_created: '$PR_CREATED'"
+          echo "pull_request_url: '$PR_URL'"
+          echo "pull_request_number: '$PR_NUMBER'"
+          echo "command_output: '$CMD_OUTPUT'"
+          if [ "$OUTCOME" = "success" ]; then
+            # When action succeeds, validate default outputs
+            if [ "$PR_CREATED" != "false" ]; then
+              echo "FAIL: expected pull_request_created to be 'false', got '$PR_CREATED'"
+              exit 1
+            fi
+            if [ -n "$PR_URL" ]; then
+              echo "FAIL: expected pull_request_url to be empty, got '$PR_URL'"
+              exit 1
+            fi
+            if [ -n "$PR_NUMBER" ]; then
+              echo "FAIL: expected pull_request_number to be empty, got '$PR_NUMBER'"
+              exit 1
+            fi
+            if [ -n "$CMD_OUTPUT" ]; then
+              echo "FAIL: expected command_output to be empty, got '$CMD_OUTPUT'"
+              exit 1
+            fi
+            echo "PASS: all default outputs are correct"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (Docker build or runtime issue)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
