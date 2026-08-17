@@ -1,0 +1,36 @@
+name: Test command input with help
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: help
+        continue-on-error: true
+      - name: Assert pull_request_created is false
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: pull_request_created is 'false'"
+      - name: Assert pull_request_url is empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_url }}
+        run: |
+          echo "actual: '$ACTUAL'"
+          if [ -n "$ACTUAL" ]; then
+            echo "FAIL: expected pull_request_url to be empty, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS: pull_request_url is empty"

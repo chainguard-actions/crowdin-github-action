@@ -27,7 +27,7 @@ upload_sources() {
   fi
 
   echo "UPLOAD SOURCES"
-  eval crowdin upload sources '"$@"' "$UPLOAD_SOURCES_OPTIONS"
+  crowdin upload sources "$@" $UPLOAD_SOURCES_OPTIONS
 }
 
 upload_translations() {
@@ -48,7 +48,7 @@ upload_translations() {
   fi
 
   echo "UPLOAD TRANSLATIONS"
-  eval crowdin upload translations '"$@"' "$UPLOAD_TRANSLATIONS_OPTIONS"
+  crowdin upload translations "$@" $UPLOAD_TRANSLATIONS_OPTIONS
 }
 
 download_sources() {
@@ -57,7 +57,7 @@ download_sources() {
   fi
 
   echo "DOWNLOAD SOURCES"
-  eval crowdin download sources '"$@"' "$DOWNLOAD_SOURCES_OPTIONS"
+  crowdin download sources "$@" $DOWNLOAD_SOURCES_OPTIONS
 }
 
 download_translations() {
@@ -84,7 +84,7 @@ download_translations() {
   fi
 
   echo "DOWNLOAD TRANSLATIONS"
-  eval crowdin download '"$@"' "$DOWNLOAD_TRANSLATIONS_OPTIONS"
+  crowdin download "$@" $DOWNLOAD_TRANSLATIONS_OPTIONS
 }
 
 create_pull_request() {
@@ -406,7 +406,7 @@ if [ -n "$INPUT_TRANSLATION" ]; then
 fi
 
 if [ -n "$INPUT_COMMAND_ARGS" ]; then
-  eval set -- '"$@"' "$INPUT_COMMAND_ARGS"
+  set -- "$@" ${INPUT_COMMAND_ARGS}
 fi
 
 DOWNLOAD_BUNDLE_ARGS="$@"
@@ -418,19 +418,16 @@ fi
 #EXECUTE COMMANDS
 
 if [ -n "$INPUT_COMMAND" ]; then
-  echo "RUNNING COMMAND crowdin ${INPUT_COMMAND} ${INPUT_COMMAND_ARGS}"
+  echo "RUNNING COMMAND crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS"
 
   # Capture command output while still displaying it
-  # Use eval to allow proper word-splitting of INPUT_COMMAND_ARGS while keeping INPUT_COMMAND quoted
-  CROWDIN_OUTPUT=$(eval crowdin '"${INPUT_COMMAND}"' "${INPUT_COMMAND_ARGS}")
+  CROWDIN_OUTPUT=$(crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS)
   echo "$CROWDIN_OUTPUT"
 
-  # Write multiline output to GITHUB_OUTPUT using a unique heredoc delimiter
-  # to prevent delimiter-injection attacks from the command output
-  CROWDIN_DELIM="CROWDIN_EOF_$(od -An -N8 -tx1 /dev/urandom 2>/dev/null | tr -d ' \n' || echo '0000000000000000')"
-  printf 'command_output<<%s\n' "$CROWDIN_DELIM" >> "$GITHUB_OUTPUT"
-  printf '%s\n' "$CROWDIN_OUTPUT" >> "$GITHUB_OUTPUT"
-  printf '%s\n' "$CROWDIN_DELIM" >> "$GITHUB_OUTPUT"
+  # Write multiline output to GITHUB_OUTPUT using heredoc delimiter
+  echo "command_output<<CROWDIN_EOF" >> $GITHUB_OUTPUT
+  echo "$CROWDIN_OUTPUT" >> $GITHUB_OUTPUT
+  echo "CROWDIN_EOF" >> $GITHUB_OUTPUT
 
   # in this case, we don't need to continue executing any further default behavior
   exit 0
@@ -469,9 +466,9 @@ if [ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]; then
 fi
 
 if [ "$INPUT_DOWNLOAD_BUNDLE" ]; then
-  echo "DOWNLOADING BUNDLE ${INPUT_DOWNLOAD_BUNDLE}"
+  echo "DOWNLOADING BUNDLE $INPUT_DOWNLOAD_BUNDLE"
 
-  eval crowdin bundle download '"${INPUT_DOWNLOAD_BUNDLE}"' "$DOWNLOAD_BUNDLE_ARGS"
+  crowdin bundle download $INPUT_DOWNLOAD_BUNDLE $DOWNLOAD_BUNDLE_ARGS
 
   if [ "$INPUT_PUSH_TRANSLATIONS" = true ]; then
       [ -n "${INPUT_GPG_PRIVATE_KEY}" ] && {

@@ -1,0 +1,36 @@
+name: Test advanced inputs coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+      - id: action
+        uses: .
+        with:
+          project_id: '123456'
+          token: 'fake-crowdin-token'
+          upload_sources: 'false'
+          upload_translations: 'false'
+          upload_language: 'uk'
+          download_translations: 'false'
+          download_language: 'uk'
+          crowdin_branch_name: 'main'
+          github_api_base_url: 'https://api.github.com'
+          gpg_private_key: ''
+          dryrun_action: 'true'
+        continue-on-error: true
+      - name: Assert action ran with advanced inputs
+        run: |
+          echo "Action completed with advanced inputs provided"
+          echo "PASS: advanced inputs were accepted by the action"

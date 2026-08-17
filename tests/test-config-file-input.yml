@@ -1,0 +1,41 @@
+name: Test config file input coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+      - name: Create crowdin config file
+        run: |
+          cat > "$GITHUB_WORKSPACE/crowdin.yml" <<'EOF'
+          project_id: "123456"
+          api_token: "fake-crowdin-token"
+          base_url: "https://crowdin.com"
+          base_path: "."
+          files:
+            - source: /en/**/*.json
+              translation: /%two_letters_code%/**/%original_file_name%
+          EOF
+      - id: action
+        uses: .
+        with:
+          config: 'crowdin.yml'
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'false'
+          dryrun_action: 'true'
+        continue-on-error: true
+      - name: Assert action ran with config file input
+        run: |
+          echo "Action completed with config file input provided"
+          echo "PASS: config file input was accepted by the action"

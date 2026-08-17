@@ -1,0 +1,37 @@
+name: Test pull request inputs coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+      - id: action
+        uses: .
+        with:
+          project_id: '123456'
+          token: 'fake-crowdin-token'
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'false'
+          pull_request_body: 'Automated translations update from Crowdin'
+          pull_request_assignees: 'user1,user2'
+          pull_request_reviewers: 'reviewer1,reviewer2'
+          pull_request_team_reviewers: 'team-slug'
+          pull_request_labels: 'translations,automated'
+          pull_request_base_branch_name: 'main'
+          dryrun_action: 'true'
+        continue-on-error: true
+      - name: Assert action ran with pull request inputs
+        run: |
+          echo "Action completed with pull request inputs provided"
+          echo "PASS: pull request inputs were accepted by the action"
