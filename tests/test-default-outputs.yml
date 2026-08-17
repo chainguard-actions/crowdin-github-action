@@ -1,0 +1,62 @@
+name: Test default outputs when no operations performed
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+
+      - name: Assert pull_request_created is false or not set
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "actual pull_request_created: '$ACTUAL'"
+          # When no operations are performed, pull_request_created should be 'false' or empty
+          if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created='false' or empty, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert pull_request_url is empty or not set
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_url }}
+        run: |
+          echo "actual pull_request_url: '$ACTUAL'"
+          if [ -n "$ACTUAL" ]; then
+            echo "FAIL: expected pull_request_url to be empty, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert pull_request_number is empty or not set
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_number }}
+        run: |
+          echo "actual pull_request_number: '$ACTUAL'"
+          if [ -n "$ACTUAL" ]; then
+            echo "FAIL: expected pull_request_number to be empty, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+
+      - name: Assert command_output is empty or not set
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "actual command_output: '$ACTUAL'"
+          if [ -n "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be empty, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

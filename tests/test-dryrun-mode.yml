@@ -1,0 +1,41 @@
+name: Test dryrun mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          dryrun_action: 'true'
+          project_id: '0'
+          token: 'dummy-token'
+      - name: Assert pull_request_created is false in dryrun mode
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$ACTUAL'"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false' in dryrun mode, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert command_output is empty in dryrun mode (no command specified)
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: '$ACTUAL'"
+          if [ -n "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be empty when no command specified, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

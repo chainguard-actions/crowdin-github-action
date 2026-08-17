@@ -1,0 +1,45 @@
+name: Test pull request configuration inputs
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+          pull_request_body: 'Automated translations update'
+          pull_request_assignees: 'octocat'
+          pull_request_reviewers: 'octocat'
+          pull_request_team_reviewers: 'my-team'
+          pull_request_labels: 'translations,l10n'
+          pull_request_base_branch_name: 'main'
+          gpg_private_key: ''
+          project_id: '0'
+          token: 'dummy-token'
+
+      - name: Assert command_output is non-empty (version command ran)
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: '$ACTUAL'"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be non-empty (crowdin version string)"
+            exit 1
+          fi
+          echo "PASS: command_output = '$ACTUAL'"
+
+      - name: Assert pull_request_created is false when using command input
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$ACTUAL'"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,39 @@
+name: Test command output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    env:
+      GITHUB_REF: refs/heads/main
+      GITHUB_EVENT_NAME: push
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          command: '--version'
+      - name: Assert command_output is not empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: '$ACTUAL'"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be non-empty (crowdin version string)"
+            exit 1
+          fi
+          echo "PASS: command_output = '$ACTUAL'"
+      - name: Assert pull_request_created is false when using command
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$ACTUAL'"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

@@ -18,7 +18,7 @@ upload_sources() {
   fi
 
   echo "UPLOAD SOURCES"
-  crowdin upload sources "$@" "$UPLOAD_SOURCES_OPTIONS"
+  crowdin upload sources "$@" $UPLOAD_SOURCES_OPTIONS
 }
 
 upload_translations() {
@@ -39,7 +39,7 @@ upload_translations() {
   fi
 
   echo "UPLOAD TRANSLATIONS"
-  crowdin upload translations "$@" "$UPLOAD_TRANSLATIONS_OPTIONS"
+  crowdin upload translations "$@" $UPLOAD_TRANSLATIONS_OPTIONS
 }
 
 download_sources() {
@@ -48,7 +48,7 @@ download_sources() {
   fi
 
   echo "DOWNLOAD SOURCES"
-  crowdin download sources "$@" "$DOWNLOAD_SOURCES_OPTIONS"
+  crowdin download sources "$@" $DOWNLOAD_SOURCES_OPTIONS
 }
 
 download_translations() {
@@ -75,7 +75,7 @@ download_translations() {
   fi
 
   echo "DOWNLOAD TRANSLATIONS"
-  crowdin download "$@" "$DOWNLOAD_TRANSLATIONS_OPTIONS"
+  crowdin download "$@" $DOWNLOAD_TRANSLATIONS_OPTIONS
 }
 
 create_pull_request() {
@@ -384,15 +384,13 @@ if [ -n "$INPUT_COMMAND" ]; then
   echo "RUNNING COMMAND crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS"
 
   # Capture command output while still displaying it
-  CROWDIN_OUTPUT=$(crowdin "$INPUT_COMMAND" "$INPUT_COMMAND_ARGS")
+  CROWDIN_OUTPUT=$(crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS)
   echo "$CROWDIN_OUTPUT"
 
   # Write multiline output to GITHUB_OUTPUT using heredoc delimiter
-  # Sanitize output to prevent newline injection into GITHUB_OUTPUT key name
-  safe_output=$(printf '%s' "$CROWDIN_OUTPUT" | tr -d '\r')
-  echo "command_output<<CROWDIN_EOF" >> "$GITHUB_OUTPUT"
-  printf '%s\n' "$safe_output" >> "$GITHUB_OUTPUT"
-  echo "CROWDIN_EOF" >> "$GITHUB_OUTPUT"
+  echo "command_output<<CROWDIN_EOF" >> $GITHUB_OUTPUT
+  echo "$CROWDIN_OUTPUT" >> $GITHUB_OUTPUT
+  echo "CROWDIN_EOF" >> $GITHUB_OUTPUT
 
   # in this case, we don't need to continue executing any further default behavior
   exit 0
@@ -433,7 +431,7 @@ fi
 if [ "$INPUT_DOWNLOAD_BUNDLE" ]; then
   echo "DOWNLOADING BUNDLE $INPUT_DOWNLOAD_BUNDLE"
 
-  crowdin bundle download "$INPUT_DOWNLOAD_BUNDLE" "$DOWNLOAD_BUNDLE_ARGS"
+  crowdin bundle download $INPUT_DOWNLOAD_BUNDLE $DOWNLOAD_BUNDLE_ARGS
 
   if [ "$INPUT_PUSH_TRANSLATIONS" = true ]; then
       [ -n "${INPUT_GPG_PRIVATE_KEY}" ] && {

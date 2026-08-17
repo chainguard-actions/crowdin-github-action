@@ -1,0 +1,43 @@
+name: Test command input with help
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          command: '--help'
+
+      - name: Assert command_output contains help text or action succeeded
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "actual: '$ACTUAL'"
+          # The help output may go to stdout or stderr depending on the CLI.
+          # If command_output is non-empty, verify it looks like help text.
+          if [ -n "$ACTUAL" ]; then
+            if ! echo "$ACTUAL" | grep -qi "crowdin\|usage\|command\|option\|help"; then
+              echo "FAIL: command_output does not look like help text: $ACTUAL"
+              exit 1
+            fi
+            echo "PASS: command_output contains help text"
+          else
+            echo "PASS: action step succeeded (help output may go to stderr)"
+          fi
+
+      - name: Assert pull_request_created is false when using command input
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "actual pull_request_created: '$ACTUAL'"
+          # When using command input, pull_request_created should be false or unset
+          if [ -n "$ACTUAL" ] && [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created='false' or empty, got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"

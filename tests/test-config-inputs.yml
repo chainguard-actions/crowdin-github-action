@@ -1,0 +1,47 @@
+name: Test config-related inputs
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Create a dummy crowdin config file
+        run: |
+          mkdir -p "$GITHUB_WORKSPACE/crowdin-cfg"
+          cat > "$GITHUB_WORKSPACE/crowdin-cfg/crowdin.yml" <<'EOF'
+          "project_id": "0"
+          "api_token": "dummy"
+          "base_path": "."
+          "base_url": "https://api.crowdin.com"
+          "files":
+            - source: "/src/**/*.json"
+              translation: "/translations/%two_letters_code%/%original_file_name%"
+          EOF
+
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+          config: 'crowdin-cfg/crowdin.yml'
+          base_path: 'src'
+          base_url: 'https://api.crowdin.com'
+          source: '/src/**/*.json'
+          translation: '/translations/%two_letters_code%/%original_file_name%'
+          crowdin_branch_name: 'main'
+          upload_language: 'uk'
+          project_id: '0'
+          token: 'dummy-token'
+
+      - name: Assert command_output contains version info
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: '$ACTUAL'"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be non-empty (crowdin version string)"
+            exit 1
+          fi
+          echo "PASS: command_output = '$ACTUAL'"

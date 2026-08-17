@@ -1,0 +1,41 @@
+name: Test command_args and github_api_base_url inputs
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+          command_args: '--plain'
+          github_api_base_url: 'https://api.github.com'
+          download_language: 'uk'
+          project_id: '0'
+          token: 'dummy-token'
+
+      - name: Assert command_output is non-empty when using command_args
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: '$ACTUAL'"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be non-empty (crowdin version string)"
+            exit 1
+          fi
+          echo "PASS: command_output = '$ACTUAL'"
+
+      - name: Assert pull_request_created is false when using command input
+        env:
+          ACTUAL: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$ACTUAL'"
+          if [ "$ACTUAL" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false', got '$ACTUAL'"
+            exit 1
+          fi
+          echo "PASS"
