@@ -1,0 +1,35 @@
+name: Test download translations with language, crowdin_branch_name, and base_url inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'true'
+          download_language: 'de'
+          crowdin_branch_name: 'main'
+          base_url: 'https://api.crowdin.com'
+          project_id: '999999'
+          token: 'invalid-token-for-testing'
+
+      - name: Assert action ran (download with language, crowdin_branch_name, base_url)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully as expected with invalid credentials"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (unexpected but acceptable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

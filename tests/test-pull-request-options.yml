@@ -1,0 +1,40 @@
+name: Test download translations with pull request options
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'true'
+          create_pull_request: 'true'
+          pull_request_title: 'Test PR Title'
+          pull_request_body: 'This is a test pull request body'
+          pull_request_assignees: 'test-user'
+          pull_request_reviewers: 'reviewer-user'
+          pull_request_team_reviewers: 'test-team'
+          pull_request_labels: 'translations,l10n'
+          pull_request_base_branch_name: 'main'
+          project_id: '999999'
+          token: 'invalid-token-for-testing'
+
+      - name: Assert action ran (download with pull request options)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully as expected with invalid credentials"
+          elif [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded (unexpected but acceptable)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

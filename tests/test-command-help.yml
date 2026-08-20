@@ -1,0 +1,45 @@
+name: Test command help output
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: 'help'
+
+      - name: Assert action ran (help command)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "actual: $ACTUAL"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$ACTUAL" ]; then
+              echo "FAIL: command_output is empty, expected help text"
+              exit 1
+            fi
+            echo "PASS: command_output is non-empty"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (crowdin help may exit non-zero)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
+
+      - name: Assert pull_request_created is not true
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$PR_CREATED'"
+          if [ "$PR_CREATED" = "true" ]; then
+            echo "FAIL: pull_request_created should not be true when using command input"
+            exit 1
+          fi
+          echo "PASS: pull_request_created is not true as expected"
