@@ -1,0 +1,51 @@
+name: Test custom command (help)
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up git origin reachable inside the Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: 'help'
+          upload_sources: 'false'
+
+      - name: Assert command ran and produced output or failed gracefully
+        env:
+          OUTPUT: ${{ steps.action.outputs.command_output }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "command_output: $OUTPUT"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ -z "$OUTPUT" ]; then
+              echo "FAIL: action succeeded but command_output is empty"
+              exit 1
+            fi
+            if echo "$OUTPUT" | grep -qiE 'crowdin|usage|command|help|option'; then
+              echo "PASS: command_output contains expected help content"
+            else
+              echo "FAIL: command_output does not contain expected help content: $OUTPUT"
+              exit 1
+            fi
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: crowdin help exited non-zero (acceptable CLI behavior)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

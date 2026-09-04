@@ -1,0 +1,55 @@
+name: Test dryrun with no operations
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up git origin reachable inside the Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          dryrun_action: 'false'
+
+      - name: Assert action completed with default outputs
+        env:
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+          PR_NUMBER: ${{ steps.action.outputs.pull_request_number }}
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          CMD_OUTPUT: ${{ steps.action.outputs.command_output }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "pull_request_url: '$PR_URL'"
+          echo "pull_request_number: '$PR_NUMBER'"
+          echo "pull_request_created: '$PR_CREATED'"
+          echo "command_output: '$CMD_OUTPUT'"
+
+          if [ "$OUTCOME" != "success" ]; then
+            echo "FAIL: expected action to succeed with no-op configuration, got '$OUTCOME'"
+            exit 1
+          fi
+
+          if [ "$PR_CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false', got '$PR_CREATED'"
+            exit 1
+          fi
+
+          echo "PASS: action completed successfully with default outputs"
