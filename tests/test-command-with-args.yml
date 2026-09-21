@@ -1,0 +1,50 @@
+name: Test command mode with command_args
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+          command_args: ''
+
+      - name: Assert command_output is non-empty
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: command_output='$ACTUAL'"
+
+      - name: Assert pull_request_created is false or empty
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: '$PR_CREATED'"
+          if [ "$PR_CREATED" = "false" ] || [ -z "$PR_CREATED" ]; then
+            echo "PASS: pull_request_created is '$PR_CREATED' (no PR created)"
+          else
+            echo "FAIL: expected pull_request_created='false' or empty, got '$PR_CREATED'"
+            exit 1
+          fi
+
+      - name: Assert pull_request_url is empty
+        env:
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+        run: |
+          echo "pull_request_url: '$PR_URL'"
+          if [ -n "$PR_URL" ]; then
+            echo "FAIL: expected pull_request_url to be empty, got '$PR_URL'"
+            exit 1
+          fi
+          echo "PASS"

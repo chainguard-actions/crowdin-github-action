@@ -1,0 +1,30 @@
+name: Test GitHub Enterprise configuration options
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+          github_base_url: 'github.com'
+          github_api_base_url: 'https://api.github.com'
+          github_user_name: 'Test Bot'
+          github_user_email: 'testbot@example.com'
+
+      - name: Assert command_output is non-empty (version printed)
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "actual: $ACTUAL"
+          if [ -z "$ACTUAL" ]; then
+            echo "FAIL: expected command_output to be non-empty"
+            exit 1
+          fi
+          echo "PASS: command_output='$ACTUAL'"
