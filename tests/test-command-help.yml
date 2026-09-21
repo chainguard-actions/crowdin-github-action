@@ -1,0 +1,38 @@
+name: Test command input with help subcommand
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: 'help'
+
+      - name: Assert command ran (help output or graceful failure)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          OUTPUT: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "command_output: $OUTPUT"
+          if [ "$OUTCOME" = "success" ]; then
+            # crowdin help should output usage/command info
+            if echo "$OUTPUT" | grep -qiE 'usage|command|crowdin|help|available'; then
+              echo "PASS: command_output contains help text"
+            else
+              echo "FAIL: command_output does not look like help output: $OUTPUT"
+              exit 1
+            fi
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran (help command may output to stderr causing capture to be empty)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

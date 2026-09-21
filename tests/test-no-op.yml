@@ -1,0 +1,31 @@
+name: Test no-op when all operations disabled
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+
+      - name: Assert action succeeded with no operations
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          COMMAND_OUTPUT: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "pull_request_created: $PR_CREATED"
+          echo "command_output: '$COMMAND_OUTPUT'"
+          if [ "$PR_CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created='false', got '$PR_CREATED'"
+            exit 1
+          fi
+          echo "PASS: action completed successfully in no-op mode"

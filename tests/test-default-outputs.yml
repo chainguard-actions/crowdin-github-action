@@ -1,0 +1,49 @@
+name: Test default outputs are set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - id: action
+        uses: .
+        with:
+          # Use command path to avoid needing Crowdin credentials
+          command: '--version'
+
+      - name: Assert pull_request_created default is false
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "pull_request_created: $PR_CREATED"
+          if [ "$PR_CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created='false', got '$PR_CREATED'"
+            exit 1
+          fi
+          echo "PASS: pull_request_created is 'false' as expected"
+
+      - name: Assert pull_request_url default is empty
+        env:
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+        run: |
+          echo "pull_request_url: '$PR_URL'"
+          if [ -n "$PR_URL" ]; then
+            echo "FAIL: expected pull_request_url to be empty, got '$PR_URL'"
+            exit 1
+          fi
+          echo "PASS: pull_request_url is empty as expected"
+
+      - name: Assert pull_request_number default is empty
+        env:
+          PR_NUMBER: ${{ steps.action.outputs.pull_request_number }}
+        run: |
+          echo "pull_request_number: '$PR_NUMBER'"
+          if [ -n "$PR_NUMBER" ]; then
+            echo "FAIL: expected pull_request_number to be empty, got '$PR_NUMBER'"
+            exit 1
+          fi
+          echo "PASS: pull_request_number is empty as expected"

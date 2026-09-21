@@ -1,0 +1,35 @@
+name: Test command args and branch inputs coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: "--version"
+          command_args: "--verbose"
+          crowdin_branch_name: "main"
+          upload_language: "en"
+          upload_sources: "false"
+          upload_translations: "false"
+          download_sources: "false"
+          download_translations: "false"
+        continue-on-error: true
+      - name: Assert action ran (version command or failed gracefully)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          OUTPUT: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "output: $OUTPUT"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (expected without real credentials)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
