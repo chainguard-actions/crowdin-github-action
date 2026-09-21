@@ -20,6 +20,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v3.0.1 | [`v3.0.1`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.0.1) | [`71fdb88`](https://github.com/crowdin/github-action/commit/71fdb8814261dd703be4ca7c6450d21b1868da4b) |
 | v3.0.2 | [`v3.0.2`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.0.2) | [`0d5670f`](https://github.com/crowdin/github-action/commit/0d5670f539973aea2f01abce61a8989934df0025) |
 | v3.1.0 | [`v3.1.0`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.1.0) | [`9af557d`](https://github.com/crowdin/github-action/commit/9af557de76d70c480f88065d336f445a362f402b) |
+| v3.2.0 | [`v3.2.0`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.2.0) | [`df474cd`](https://github.com/crowdin/github-action/commit/df474cdfb9f41d6ae777118749477c2cdf7cacc8) |
 
 ## Privacy
 
