@@ -167,13 +167,13 @@ create_pull_request() {
     view_debug_output
 
     if [ -n "$PULL_REQUESTS_URL" ]; then
-      safe_url=$(printf '%s' "$PULL_REQUESTS_URL" | tr -d '\n\r')
-      echo "pull_request_url=$safe_url" >> $GITHUB_OUTPUT
+      _safe_url=$(printf '%s' "$PULL_REQUESTS_URL" | tr -d '\n\r')
+      echo "pull_request_url=$_safe_url" >> $GITHUB_OUTPUT
     fi
 
     if [ -n "$PULL_REQUESTS_NUMBER" ]; then
-      safe_number=$(printf '%s' "$PULL_REQUESTS_NUMBER" | tr -d '\n\r')
-      echo "pull_request_number=$safe_number" >> $GITHUB_OUTPUT
+      _safe_number=$(printf '%s' "$PULL_REQUESTS_NUMBER" | tr -d '\n\r')
+      echo "pull_request_number=$_safe_number" >> $GITHUB_OUTPUT
     fi
 
     if [ "$PULL_REQUESTS_URL" = null ]; then
@@ -413,7 +413,11 @@ if [ -n "$INPUT_TRANSLATION" ]; then
 fi
 
 if [ -n "$INPUT_COMMAND_ARGS" ]; then
-  set -- "$@" ${INPUT_COMMAND_ARGS}
+  while IFS= read -r _arg; do
+    set -- "$@" "$_arg"
+  done <<EOF
+$(printf '%s' "$INPUT_COMMAND_ARGS" | xargs -n1 printf '%s\n')
+EOF
 fi
 
 DOWNLOAD_BUNDLE_ARGS="$@"
@@ -427,15 +431,12 @@ fi
 if [ -n "$INPUT_COMMAND" ]; then
   echo "RUNNING COMMAND crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS"
 
-  # Tokenize INPUT_COMMAND_ARGS into an array (quote-aware, like the shell would)
-  cmd_args=()
-  if [ -n "$INPUT_COMMAND_ARGS" ]; then
-    while IFS= read -r -d '' t; do cmd_args+=("$t"); done \
-      < <(printf '%s' "$INPUT_COMMAND_ARGS" | xargs printf '%s\0')
-  fi
-
   # Capture command output while still displaying it
-  CROWDIN_OUTPUT=$(crowdin "$INPUT_COMMAND" "${cmd_args[@]}")
+  if [ -n "$INPUT_COMMAND_ARGS" ]; then
+    CROWDIN_OUTPUT=$(printf '%s' "$INPUT_COMMAND_ARGS" | xargs crowdin "$INPUT_COMMAND")
+  else
+    CROWDIN_OUTPUT=$(crowdin "$INPUT_COMMAND")
+  fi
   echo "$CROWDIN_OUTPUT"
 
   # Write multiline output to GITHUB_OUTPUT using heredoc delimiter

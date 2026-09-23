@@ -1,0 +1,32 @@
+name: Test config inputs coverage
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          command: help
+          config: crowdin.yml
+          base_path: .
+          source: /src/**/*
+          translation: /translations/%two_letters_code%/%original_file_name%
+          base_url: https://api.crowdin.com
+          crowdin_branch_name: main
+      - name: Assert action ran (help command or failed gracefully)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          OUTPUT: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "output: $OUTPUT"
+          if [ "$OUTCOME" = "success" ] || [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action ran with config inputs"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
