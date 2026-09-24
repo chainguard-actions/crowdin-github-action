@@ -1,0 +1,8 @@
+FROM crowdin/cli:5.3.0
+
+RUN apk --no-cache add curl git git-lfs jq gnupg su-exec;
+
+COPY . .
+COPY entrypoint.sh /entrypoint.sh
+
+ENTRYPOINT ["/entrypoint.sh"]

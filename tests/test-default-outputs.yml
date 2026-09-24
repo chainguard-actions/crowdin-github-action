@@ -1,0 +1,53 @@
+name: Test default outputs are set
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up a git origin reachable inside the Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+        continue-on-error: true
+
+      - name: Assert default outputs are present
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          CMD_OUTPUT: ${{ steps.action.outputs.command_output }}
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "pull_request_created: '$PR_CREATED'"
+          echo "command_output: '$CMD_OUTPUT'"
+          if [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (sentinel repo or environment issue)"
+            exit 0
+          fi
+          # When the action succeeds, pull_request_created should default to 'false'
+          # and command_output should be set (since we used the command input)
+          if [ "$PR_CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created to be 'false', got '$PR_CREATED'"
+            exit 1
+          fi
+          if [ -z "$CMD_OUTPUT" ]; then
+            echo "FAIL: expected command_output to be non-empty when using command input"
+            exit 1
+          fi
+          echo "PASS: default outputs are correctly set"

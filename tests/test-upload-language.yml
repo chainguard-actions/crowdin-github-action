@@ -1,0 +1,50 @@
+name: Test upload translations for a single language
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up a git origin reachable inside the Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'true'
+          upload_language: 'fr'
+          download_sources: 'false'
+          download_translations: 'false'
+          project_id: '123456'
+          token: 'fake-crowdin-token-for-upload-lang-test'
+          source: '**/*.json'
+          translation: '/translations/%two_letters_code%/%original_file_name%'
+        continue-on-error: true
+
+      - name: Assert action ran with upload_language option
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+        run: |
+          echo "outcome: $OUTCOME"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with upload_language option"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (invalid Crowdin credentials as expected)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi

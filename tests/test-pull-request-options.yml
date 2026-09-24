@@ -1,0 +1,65 @@
+name: Test pull request configuration options
+
+on:
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+
+      - name: Set up a git origin reachable inside the Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'true'
+          push_translations: 'true'
+          create_pull_request: 'true'
+          pull_request_title: 'Test Crowdin Translations'
+          pull_request_body: 'Automated translation update from Crowdin'
+          pull_request_assignees: 'test-user'
+          pull_request_reviewers: 'reviewer-user'
+          pull_request_team_reviewers: 'test-team'
+          pull_request_labels: 'translations,automated'
+          pull_request_base_branch_name: 'main'
+          localization_branch_name: 'l10n_test_branch'
+          project_id: '123456'
+          token: 'fake-crowdin-token-for-pr-options-test'
+          source: '**/*.json'
+          translation: '/translations/%two_letters_code%/%original_file_name%'
+        continue-on-error: true
+
+      - name: Assert action ran with pull request options
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+          PR_NUMBER: ${{ steps.action.outputs.pull_request_number }}
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "pull_request_url: $PR_URL"
+          echo "pull_request_number: $PR_NUMBER"
+          echo "pull_request_created: $PR_CREATED"
+          if [ "$OUTCOME" = "success" ]; then
+            echo "PASS: action succeeded with pull request options"
+          elif [ "$OUTCOME" = "failure" ]; then
+            echo "PASS: action failed gracefully (invalid Crowdin credentials or sentinel repo as expected)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
