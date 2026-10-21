@@ -1,0 +1,28 @@
+name: Test all operations disabled (default outputs)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+      - name: Assert default outputs
+        env:
+          URL: ${{ steps.action.outputs.pull_request_url }}
+          NUM: ${{ steps.action.outputs.pull_request_number }}
+          CREATED: ${{ steps.action.outputs.pull_request_created }}
+          CMD: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "url='$URL' number='$NUM' created='$CREATED' command_output='$CMD'"
+          if [ -n "$URL" ]; then echo "FAIL: pull_request_url should be empty"; exit 1; fi
+          if [ -n "$NUM" ]; then echo "FAIL: pull_request_number should be empty"; exit 1; fi
+          if [ "$CREATED" != "false" ]; then echo "FAIL: pull_request_created should be false"; exit 1; fi
+          if [ -n "$CMD" ]; then echo "FAIL: command_output should be empty"; exit 1; fi
+          echo "PASS"

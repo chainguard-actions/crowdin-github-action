@@ -1,0 +1,31 @@
+name: Test command input with command_args (help)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: 'upload'
+          command_args: '--help'
+      - name: Assert command_output contains help text
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "command_output: $ACTUAL"
+          if [ -z "$(echo "$ACTUAL" | tr -d '[:space:]')" ]; then
+            echo "FAIL: command_output is empty"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -qi 'usage'; then
+            echo "FAIL: expected usage text in command_output"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -qi 'sources'; then
+            echo "FAIL: expected 'sources' subcommand mentioned in help"
+            exit 1
+          fi
+          echo "PASS"

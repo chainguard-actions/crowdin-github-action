@@ -1,0 +1,42 @@
+name: Test pull request options accepted in command mode
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+          github_api_base_url: 'api.github.com'
+          gpg_private_key: 'not-a-real-key'
+          pull_request_assignees: 'user1,user2'
+          pull_request_base_branch_name: 'main'
+          pull_request_body: 'Test PR body'
+          pull_request_labels: 'i18n, crowdin'
+          pull_request_reviewers: 'reviewer1'
+          pull_request_team_reviewers: 'team1'
+      - name: Assert command ran and no PR was created
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          PR_NUMBER: ${{ steps.action.outputs.pull_request_number }}
+        run: |
+          echo "command_output: $ACTUAL"
+          echo "pull_request_created: $PR_CREATED"
+          echo "pull_request_number: $PR_NUMBER"
+          if ! echo "$ACTUAL" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "FAIL: expected a semantic version in command_output"
+            exit 1
+          fi
+          if [ "$PR_CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created=false"
+            exit 1
+          fi
+          if [ -n "$PR_NUMBER" ]; then
+            echo "FAIL: expected empty pull_request_number"
+            exit 1
+          fi
+          echo "PASS"

@@ -1,0 +1,28 @@
+name: Test command input (--version)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: '--version'
+      - name: Assert command_output contains CLI version
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+        run: |
+          echo "command_output: $ACTUAL"
+          echo "pull_request_created: $PR_CREATED"
+          if ! echo "$ACTUAL" | grep -qE '[0-9]+\.[0-9]+\.[0-9]+'; then
+            echo "FAIL: expected a semantic version in command_output"
+            exit 1
+          fi
+          if [ "$PR_CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created=false"
+            exit 1
+          fi
+          echo "PASS"
