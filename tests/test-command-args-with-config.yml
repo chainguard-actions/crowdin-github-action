@@ -1,0 +1,46 @@
+name: Test command with command_args and config inputs
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: 'upload'
+          command_args: '--help'
+          project_id: '123456'
+          token: 'dummy-crowdin-token-not-used-in-command-mode'
+          base_url: 'https://api.crowdin.com'
+          base_path: '.'
+          source: 'locales/en.json'
+          translation: 'locales/%two_letters_code%.json'
+          crowdin_branch_name: 'test-branch'
+      - name: Assert command_output contains upload subcommand help
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -qi 'usage'; then
+            echo "FAIL: expected 'Usage' in command_output"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -qi 'sources'; then
+            echo "FAIL: expected 'sources' subcommand listed in upload help"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert default PR outputs
+        env:
+          CREATED: ${{ steps.action.outputs.pull_request_created }}
+          URL: ${{ steps.action.outputs.pull_request_url }}
+          NUMBER: ${{ steps.action.outputs.pull_request_number }}
+        run: |
+          echo "created: $CREATED url: $URL number: $NUMBER"
+          if [ "$CREATED" != "false" ] || [ -n "$URL" ] || [ -n "$NUMBER" ]; then
+            echo "FAIL: expected default (empty/false) PR outputs"
+            exit 1
+          fi
+          echo "PASS"

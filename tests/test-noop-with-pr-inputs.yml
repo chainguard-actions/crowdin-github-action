@@ -1,0 +1,49 @@
+name: Test no-op run with PR, language and GPG inputs set
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_sources: 'false'
+          download_translations: 'false'
+          upload_language: 'uk'
+          download_language: 'de'
+          gpg_private_key: 'not-a-real-key-unused-because-nothing-is-pushed'
+          github_api_base_url: 'api.github.com'
+          pull_request_body: 'Test body'
+          pull_request_assignees: 'user1,user2'
+          pull_request_reviewers: 'reviewer1'
+          pull_request_team_reviewers: 'team1'
+          pull_request_labels: 'l10n,crowdin'
+          pull_request_base_branch_name: 'main'
+      - name: Assert no PR was created and outputs are defaults
+        env:
+          CREATED: ${{ steps.action.outputs.pull_request_created }}
+          URL: ${{ steps.action.outputs.pull_request_url }}
+          NUMBER: ${{ steps.action.outputs.pull_request_number }}
+          CMD: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "created: $CREATED url: $URL number: $NUMBER cmd: $CMD"
+          if [ "$CREATED" != "false" ]; then
+            echo "FAIL: expected pull_request_created=false"
+            exit 1
+          fi
+          if [ -n "$URL" ] || [ -n "$NUMBER" ] || [ -n "$CMD" ]; then
+            echo "FAIL: expected empty outputs"
+            exit 1
+          fi
+          echo "PASS"
+      - name: Assert private key file was not left in workspace
+        run: |
+          if [ -f "$GITHUB_WORKSPACE/private.key" ]; then
+            echo "FAIL: private.key should not exist (GPG setup must not run without push)"
+            exit 1
+          fi
+          echo "PASS"

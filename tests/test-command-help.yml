@@ -1,0 +1,32 @@
+name: Test command input (--help)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - id: action
+        uses: .
+        with:
+          command: '--help'
+      - name: Assert command_output contains usage text (multiline captured)
+        env:
+          ACTUAL: ${{ steps.action.outputs.command_output }}
+        run: |
+          echo "actual: $ACTUAL"
+          if ! echo "$ACTUAL" | grep -qi 'usage'; then
+            echo "FAIL: expected 'Usage' in command_output"
+            exit 1
+          fi
+          if ! echo "$ACTUAL" | grep -qi 'upload'; then
+            echo "FAIL: expected 'upload' command listed in command_output"
+            exit 1
+          fi
+          LINES=$(printf '%s\n' "$ACTUAL" | wc -l)
+          echo "lines: $LINES"
+          if [ "$LINES" -lt 2 ]; then
+            echo "FAIL: expected multiline output"
+            exit 1
+          fi
+          echo "PASS"
