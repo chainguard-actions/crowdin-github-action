@@ -24,6 +24,7 @@ Hardened by [Chainguard](https://www.chainguard.dev) from the upstream action at
 | v3.3.0 | [`v3.3.0`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.3.0) | [`9c23991`](https://github.com/crowdin/github-action/commit/9c23991700c0ec5256fd41089b9d9d7d540e424e) | [`HARDENING.md`](https://github.com/chainguard-actions/crowdin-github-action/blob/v3.3.0/HARDENING.md) |
 | v3.4.0 | [`v3.4.0`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.4.0) | [`7295543`](https://github.com/crowdin/github-action/commit/72955432d4aa4f6dd64cf17eeb88dd34d6ba064c) | [`HARDENING.md`](https://github.com/chainguard-actions/crowdin-github-action/blob/v3.4.0/HARDENING.md) |
 | v3.5.0 | [`v3.5.0`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.5.0) | [`959dc74`](https://github.com/crowdin/github-action/commit/959dc74ac104447731cba99a016f85d0ae719788) | [`HARDENING.md`](https://github.com/chainguard-actions/crowdin-github-action/blob/v3.5.0/HARDENING.md) |
+| v3.5.1 | [`v3.5.1`](https://github.com/chainguard-actions/crowdin-github-action/tree/v3.5.1) | [`5b9790d`](https://github.com/crowdin/github-action/commit/5b9790df740c85af5412a3a3a91b24988d5d324f) | [`HARDENING.md`](https://github.com/chainguard-actions/crowdin-github-action/blob/v3.5.1/HARDENING.md) |
 
 ## Privacy
 
