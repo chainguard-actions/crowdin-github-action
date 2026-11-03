@@ -1,0 +1,37 @@
+name: Test base_path is forwarded to CLI
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install fake crowdin CLI on PATH
+        run: |
+          mkdir -p /tmp/fakebin
+          cat > /tmp/fakebin/crowdin <<'EOF'
+          #!/bin/sh
+          echo "$*" >> /tmp/crowdin-calls.log
+          exit 0
+          EOF
+          chmod +x /tmp/fakebin/crowdin
+          rm -f /tmp/crowdin-calls.log
+          echo "/tmp/fakebin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          use_installed_cli: 'true'
+          upload_sources: 'true'
+          base_path: 'my/project/dir'
+      - name: Assert --base-path passed
+        run: |
+          echo "calls:"; cat /tmp/crowdin-calls.log
+          LINE="$(head -n1 /tmp/crowdin-calls.log)"
+          case "$LINE" in
+            upload*) ;;
+            *) echo "FAIL: expected upload command"; exit 1 ;;
+          esac
+          if ! echo "$LINE" | grep -qF -- "--base-path=my/project/dir"; then
+            echo "FAIL: missing --base-path arg"; exit 1
+          fi
+          echo "PASS"

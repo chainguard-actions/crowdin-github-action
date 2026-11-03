@@ -1,0 +1,55 @@
+name: Test download translations without push
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install fake crowdin CLI on PATH
+        run: |
+          mkdir -p /tmp/fakebin
+          cat > /tmp/fakebin/crowdin <<'EOF'
+          #!/bin/sh
+          echo "$*" >> /tmp/crowdin-calls.log
+          exit 0
+          EOF
+          chmod +x /tmp/fakebin/crowdin
+          rm -f /tmp/crowdin-calls.log
+          echo "/tmp/fakebin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          use_installed_cli: 'true'
+          upload_sources: 'false'
+          download_translations: 'true'
+          push_translations: 'false'
+          download_language: 'de'
+          skip_untranslated_strings: 'true'
+          skip_untranslated_files: 'true'
+          export_only_approved: 'true'
+          download_translations_args: '--keep-archive'
+      - name: Assert download invoked and no PR created
+        env:
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+        run: |
+          echo "calls:"; cat /tmp/crowdin-calls.log
+          echo "pull_request_created: $PR_CREATED"
+          if [ "$(wc -l < /tmp/crowdin-calls.log)" -ne 1 ]; then
+            echo "FAIL: expected exactly one CLI invocation"; exit 1
+          fi
+          LINE="$(cat /tmp/crowdin-calls.log)"
+          case "$LINE" in
+            "download --no-progress --no-colors"*) ;;
+            *) echo "FAIL: expected 'download' command"; exit 1 ;;
+          esac
+          for expected in "--language=de" "--skip-untranslated-strings" "--skip-untranslated-files" "--export-only-approved" "--keep-archive"; do
+            if ! echo "$LINE" | grep -qF -- "$expected"; then
+              echo "FAIL: missing arg $expected"; exit 1
+            fi
+          done
+          if [ "$PR_CREATED" != "false" ] || [ -n "$PR_URL" ]; then
+            echo "FAIL: no pull request should be created"; exit 1
+          fi
+          echo "PASS"

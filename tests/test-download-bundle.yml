@@ -1,0 +1,46 @@
+name: Test download bundle without push
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - name: Install fake crowdin CLI on PATH
+        run: |
+          mkdir -p /tmp/fakebin
+          cat > /tmp/fakebin/crowdin <<'EOF'
+          #!/bin/sh
+          echo "$*" >> /tmp/crowdin-calls.log
+          exit 0
+          EOF
+          chmod +x /tmp/fakebin/crowdin
+          rm -f /tmp/crowdin-calls.log
+          echo "/tmp/fakebin" >> "$GITHUB_PATH"
+      - id: action
+        uses: .
+        with:
+          use_installed_cli: 'true'
+          upload_sources: 'false'
+          download_bundle: '42'
+          push_translations: 'false'
+          crowdin_branch_name: 'should-not-appear'
+          project_id: '777'
+      - name: Assert bundle download invoked
+        run: |
+          echo "calls:"; cat /tmp/crowdin-calls.log
+          if [ "$(wc -l < /tmp/crowdin-calls.log)" -ne 1 ]; then
+            echo "FAIL: expected exactly one CLI invocation"; exit 1
+          fi
+          LINE="$(cat /tmp/crowdin-calls.log)"
+          case "$LINE" in
+            "bundle download 42 --no-progress --no-colors"*) ;;
+            *) echo "FAIL: expected 'bundle download 42' command"; exit 1 ;;
+          esac
+          if ! echo "$LINE" | grep -qF -- "--project-id=777"; then
+            echo "FAIL: missing --project-id"; exit 1
+          fi
+          if echo "$LINE" | grep -qF -- "--branch="; then
+            echo "FAIL: --branch must not be passed to bundle download"; exit 1
+          fi
+          echo "PASS"
