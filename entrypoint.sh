@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/sh
 
 # Re-execute as the specified user if running as root and INPUT_USER is set
 if [ -n "$INPUT_USER" ] && [ "$(id -u)" = "0" ]; then
@@ -22,85 +22,69 @@ if [ "$INPUT_DEBUG_MODE" = true ] || [ -n "$RUNNER_DEBUG" ]; then
 fi
 
 upload_sources() {
-  local caller_args=("$@")
-  local extra_args=()
-
   if [ -n "$INPUT_UPLOAD_SOURCES_ARGS" ]; then
-    while IFS= read -r -d '' _t; do extra_args+=("$_t"); done \
-      < <(printf '%s' "$INPUT_UPLOAD_SOURCES_ARGS" | xargs -r printf '%s\0')
+    UPLOAD_SOURCES_OPTIONS="${UPLOAD_SOURCES_OPTIONS} ${INPUT_UPLOAD_SOURCES_ARGS}"
   fi
 
   echo "UPLOAD SOURCES"
-  crowdin upload sources "${caller_args[@]}" "${extra_args[@]}"
+  crowdin upload sources "$@" $UPLOAD_SOURCES_OPTIONS
 }
 
 upload_translations() {
-  local caller_args=("$@")
-  local extra_args=()
-
   if [ -n "$INPUT_UPLOAD_LANGUAGE" ]; then
-    extra_args+=("--language=${INPUT_UPLOAD_LANGUAGE}")
+    UPLOAD_TRANSLATIONS_OPTIONS="${UPLOAD_TRANSLATIONS_OPTIONS} --language=${INPUT_UPLOAD_LANGUAGE}"
   fi
 
   if [ "$INPUT_AUTO_APPROVE_IMPORTED" = true ]; then
-    extra_args+=(--auto-approve-imported)
+    UPLOAD_TRANSLATIONS_OPTIONS="${UPLOAD_TRANSLATIONS_OPTIONS} --auto-approve-imported"
   fi
 
   if [ "$INPUT_IMPORT_EQ_SUGGESTIONS" = true ]; then
-    extra_args+=(--import-eq-suggestions)
+    UPLOAD_TRANSLATIONS_OPTIONS="${UPLOAD_TRANSLATIONS_OPTIONS} --import-eq-suggestions"
   fi
 
   if [ -n "$INPUT_UPLOAD_TRANSLATIONS_ARGS" ]; then
-    while IFS= read -r -d '' _t; do extra_args+=("$_t"); done \
-      < <(printf '%s' "$INPUT_UPLOAD_TRANSLATIONS_ARGS" | xargs -r printf '%s\0')
+    UPLOAD_TRANSLATIONS_OPTIONS="${UPLOAD_TRANSLATIONS_OPTIONS} ${INPUT_UPLOAD_TRANSLATIONS_ARGS}"
   fi
 
   echo "UPLOAD TRANSLATIONS"
-  crowdin upload translations "${caller_args[@]}" "${extra_args[@]}"
+  crowdin upload translations "$@" $UPLOAD_TRANSLATIONS_OPTIONS
 }
 
 download_sources() {
-  local caller_args=("$@")
-  local extra_args=()
-
   if [ -n "$INPUT_DOWNLOAD_SOURCES_ARGS" ]; then
-    while IFS= read -r -d '' _t; do extra_args+=("$_t"); done \
-      < <(printf '%s' "$INPUT_DOWNLOAD_SOURCES_ARGS" | xargs -r printf '%s\0')
+    DOWNLOAD_SOURCES_OPTIONS="${DOWNLOAD_SOURCES_OPTIONS} ${INPUT_DOWNLOAD_SOURCES_ARGS}"
   fi
 
   echo "DOWNLOAD SOURCES"
-  crowdin download sources "${caller_args[@]}" "${extra_args[@]}"
+  crowdin download sources "$@" $DOWNLOAD_SOURCES_OPTIONS
 }
 
 download_translations() {
-  local caller_args=("$@")
-  local extra_args=()
-
   if [ -n "$INPUT_DOWNLOAD_LANGUAGE" ]; then
-    extra_args+=("--language=${INPUT_DOWNLOAD_LANGUAGE}")
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --language=${INPUT_DOWNLOAD_LANGUAGE}"
   elif [ -n "$INPUT_LANGUAGE" ]; then #back compatibility for older versions
-    extra_args+=("--language=${INPUT_LANGUAGE}")
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --language=${INPUT_LANGUAGE}"
   fi
 
   if [ "$INPUT_SKIP_UNTRANSLATED_STRINGS" = true ]; then
-    extra_args+=(--skip-untranslated-strings)
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --skip-untranslated-strings"
   fi
 
   if [ "$INPUT_SKIP_UNTRANSLATED_FILES" = true ]; then
-    extra_args+=(--skip-untranslated-files)
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --skip-untranslated-files"
   fi
 
   if [ "$INPUT_EXPORT_ONLY_APPROVED" = true ]; then
-    extra_args+=(--export-only-approved)
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} --export-only-approved"
   fi
 
   if [ -n "$INPUT_DOWNLOAD_TRANSLATIONS_ARGS" ]; then
-    while IFS= read -r -d '' _t; do extra_args+=("$_t"); done \
-      < <(printf '%s' "$INPUT_DOWNLOAD_TRANSLATIONS_ARGS" | xargs -r printf '%s\0')
+    DOWNLOAD_TRANSLATIONS_OPTIONS="${DOWNLOAD_TRANSLATIONS_OPTIONS} ${INPUT_DOWNLOAD_TRANSLATIONS_ARGS}"
   fi
 
   echo "DOWNLOAD TRANSLATIONS"
-  crowdin download "${caller_args[@]}" "${extra_args[@]}"
+  crowdin download "$@" $DOWNLOAD_TRANSLATIONS_OPTIONS
 }
 
 create_pull_request() {
@@ -183,13 +167,11 @@ create_pull_request() {
     view_debug_output
 
     if [ -n "$PULL_REQUESTS_URL" ]; then
-      _safe_pr_url=$(printf '%s' "$PULL_REQUESTS_URL" | tr -d '\n\r')
-      echo "pull_request_url=${_safe_pr_url}" >> $GITHUB_OUTPUT
+      echo "pull_request_url=$PULL_REQUESTS_URL" >> $GITHUB_OUTPUT
     fi
 
     if [ -n "$PULL_REQUESTS_NUMBER" ]; then
-      _safe_pr_number=$(printf '%s' "$PULL_REQUESTS_NUMBER" | tr -d '\n\r')
-      echo "pull_request_number=${_safe_pr_number}" >> $GITHUB_OUTPUT
+      echo "pull_request_number=$PULL_REQUESTS_NUMBER" >> $GITHUB_OUTPUT
     fi
 
     if [ "$PULL_REQUESTS_URL" = null ]; then
@@ -361,8 +343,8 @@ setup_commit_signing() {
     rm private.key
     exit 1
   fi
-  GPG_KEY_OWNER_NAME=$(gpg --list-secret-keys --keyid-format=long | grep  "uid" | sed "s/.\+] \(..\+\) <\(.\+\)>/\1/")
-  GPG_KEY_OWNER_EMAIL=$(gpg --list-secret-keys --keyid-format=long | grep  "uid" | sed "s/..\+] \(.\+\) <\(.\+\)>/\2/")
+  GPG_KEY_OWNER_NAME=$(gpg --list-secret-keys --keyid-format=long | grep  "uid" | sed "s/.\+] \(.\+\) <\(.\+\)>/\1/")
+  GPG_KEY_OWNER_EMAIL=$(gpg --list-secret-keys --keyid-format=long | grep  "uid" | sed "s/.\+] \(.\+\) <\(.\+\)>/\2/")
   echo "Imported key information:"
   echo "      Key id: ${GPG_KEY_ID}"
   echo "  Owner name: ${GPG_KEY_OWNER_NAME}"
@@ -405,7 +387,7 @@ fi
 
 #SET CONFIG OPTIONS
 if [ -n "$INPUT_PROJECT_ID" ]; then
-  set -- "$@" "--project-id=${INPUT_PROJECT_ID}"
+  set -- "$@" --project-id=${INPUT_PROJECT_ID}
 fi
 
 if [ -n "$INPUT_TOKEN" ]; then
@@ -428,14 +410,11 @@ if [ -n "$INPUT_TRANSLATION" ]; then
   set -- "$@" --translation="${INPUT_TRANSLATION}"
 fi
 
-COMMAND_ARGS=()
 if [ -n "$INPUT_COMMAND_ARGS" ]; then
-  while IFS= read -r -d '' _t; do COMMAND_ARGS+=("$_t"); done \
-    < <(printf '%s' "$INPUT_COMMAND_ARGS" | xargs -r printf '%s\0')
-  set -- "$@" "${COMMAND_ARGS[@]}"
+  set -- "$@" ${INPUT_COMMAND_ARGS}
 fi
 
-DOWNLOAD_BUNDLE_ARGS=("$@")
+DOWNLOAD_BUNDLE_ARGS="$@"
 
 if [ -n "$INPUT_CROWDIN_BRANCH_NAME" ]; then
   set -- "$@" --branch="${INPUT_CROWDIN_BRANCH_NAME}"
@@ -444,10 +423,10 @@ fi
 #EXECUTE COMMANDS
 
 if [ -n "$INPUT_COMMAND" ]; then
-  echo "RUNNING COMMAND crowdin ${INPUT_COMMAND} ${INPUT_COMMAND_ARGS}"
+  echo "RUNNING COMMAND crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS"
 
   # Capture command output while still displaying it
-  CROWDIN_OUTPUT=$(crowdin "$INPUT_COMMAND" "${COMMAND_ARGS[@]}")
+  CROWDIN_OUTPUT=$(crowdin $INPUT_COMMAND $INPUT_COMMAND_ARGS)
   echo "$CROWDIN_OUTPUT"
 
   # Write multiline output to GITHUB_OUTPUT using heredoc delimiter
@@ -492,9 +471,9 @@ if [ "$INPUT_DOWNLOAD_TRANSLATIONS" = true ]; then
 fi
 
 if [ "$INPUT_DOWNLOAD_BUNDLE" ]; then
-  echo "DOWNLOADING BUNDLE ${INPUT_DOWNLOAD_BUNDLE}"
+  echo "DOWNLOADING BUNDLE $INPUT_DOWNLOAD_BUNDLE"
 
-  crowdin bundle download "${INPUT_DOWNLOAD_BUNDLE}" "${DOWNLOAD_BUNDLE_ARGS[@]}"
+  crowdin bundle download $INPUT_DOWNLOAD_BUNDLE $DOWNLOAD_BUNDLE_ARGS
 
   if [ "$INPUT_PUSH_TRANSLATIONS" = true ]; then
       [ -n "${INPUT_GPG_PRIVATE_KEY}" ] && {

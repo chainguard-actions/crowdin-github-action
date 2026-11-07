@@ -1,0 +1,67 @@
+name: Test download translations with pull request options (fake Crowdin credentials)
+on:
+  workflow_dispatch:
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up git origin reachable inside Docker container
+        run: |
+          git config user.email "test@example.com"
+          git config user.name "Test User"
+          rm -rf "$GITHUB_WORKSPACE/.git-remote"
+          git init --bare "$GITHUB_WORKSPACE/.git-remote"
+          git push "$GITHUB_WORKSPACE/.git-remote" HEAD:refs/heads/act-harness
+          git remote set-url origin "$GITHUB_WORKSPACE/.git-remote" 2>/dev/null || \
+            git remote add origin "$GITHUB_WORKSPACE/.git-remote"
+
+      - id: action
+        uses: .
+        continue-on-error: true
+        with:
+          upload_sources: 'false'
+          upload_translations: 'false'
+          download_translations: 'true'
+          download_language: 'uk'
+          push_translations: 'true'
+          create_pull_request: 'true'
+          localization_branch_name: 'l10n_act_test'
+          pull_request_title: 'Act test translations'
+          pull_request_body: 'Automated test body'
+          pull_request_assignees: 'octocat'
+          pull_request_reviewers: 'octocat'
+          pull_request_team_reviewers: 'example-team'
+          pull_request_labels: 'i18n, test'
+          pull_request_base_branch_name: 'act-harness'
+          github_api_base_url: 'api.github.com'
+          gpg_private_key: 'not-a-real-gpg-key'
+          project_id: '999999'
+          token: 'fake-crowdin-token-for-download-test'
+
+      - name: Assert action ran (download fails gracefully with fake Crowdin credentials)
+        env:
+          OUTCOME: ${{ steps.action.outcome }}
+          PR_CREATED: ${{ steps.action.outputs.pull_request_created }}
+          PR_URL: ${{ steps.action.outputs.pull_request_url }}
+        run: |
+          echo "outcome: $OUTCOME"
+          echo "pull_request_created: $PR_CREATED"
+          echo "pull_request_url: $PR_URL"
+          if [ "$OUTCOME" = "success" ]; then
+            if [ "$PR_CREATED" != "true" ] && [ "$PR_CREATED" != "false" ]; then
+              echo "FAIL: pull_request_created must be true/false, got '$PR_CREATED'"
+              exit 1
+            fi
+            echo "PASS: action succeeded"
+          elif [ "$OUTCOME" = "failure" ]; then
+            if [ "$PR_CREATED" = "true" ]; then
+              echo "FAIL: no PR should be created when the action fails"
+              exit 1
+            fi
+            echo "PASS: action failed gracefully (fake Crowdin credentials / sentinel repo)"
+          else
+            echo "FAIL: unexpected outcome '$OUTCOME'"
+            exit 1
+          fi
