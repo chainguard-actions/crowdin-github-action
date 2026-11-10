@@ -436,9 +436,12 @@ if [ -n "$INPUT_COMMAND" ]; then
   echo "$CROWDIN_OUTPUT"
 
   # Write multiline output to GITHUB_OUTPUT using heredoc delimiter
-  echo "command_output<<CROWDIN_EOF" >> $GITHUB_OUTPUT
-  echo "$CROWDIN_OUTPUT" >> $GITHUB_OUTPUT
-  echo "CROWDIN_EOF" >> $GITHUB_OUTPUT
+  CROWDIN_EOF="CROWDIN_EOF_$(od -An -N16 -tx1 /dev/urandom | tr -d ' \n')"
+  {
+    echo "command_output<<$CROWDIN_EOF"
+    echo "$CROWDIN_OUTPUT"
+    echo "$CROWDIN_EOF"
+  } >> "$GITHUB_OUTPUT"
 
   # in this case, we don't need to continue executing any further default behavior
   exit 0
