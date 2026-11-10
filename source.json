@@ -4,8 +4,13 @@
   "version": "v4.0.0-beta.0",
   "commit_sha": "f1b2bc311be1da9ce60db1fd8663ff2c0b68e606",
   "url": "https://github.com/crowdin/github-action",
-  "policy_sha": "d636be7e43ef829af6e853da6b3c7566db9f72fe",
+  "policy_sha": "374911c4be584df24e6da57af2d990570ef0f859",
   "test_policy_sha": "843adf9e4b8f85d0c08b27b9d0b09dd094b54702",
   "test_agent_version": "2",
-  "harden_agent_version": "2"
+  "harden_agent_version": "2",
+  "dist_artifact": {
+    "gcs_uri": "gs://patch-actions-node-artifacts/dist-artifacts/crowdin/github-action/v4.0.0-beta.0/sha256-3527b8c521e290d55a715cbb85eb01f079718d28cb11dd253512845f1d7c919f.tar.gz",
+    "sha256": "3527b8c521e290d55a715cbb85eb01f079718d28cb11dd253512845f1d7c919f",
+    "size_bytes": 247054
+  }
 }
